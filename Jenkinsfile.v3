@@ -1,0 +1,52 @@
+node {
+   def to = emailextrecipients([
+	[$class: 'mike.duran@hotmail.de']
+   ])
+   def commit_id
+   stage('Preparation') {
+     checkout scm
+     sh "git rev-parse --short HEAD > .git/commit-id"                        
+     commit_id = readFile('.git/commit-id').trim()
+   }
+   stage('test node') {
+	def myTestContainer = docker.image("node:latest")
+        myTestContainer.pull()
+        myTestContainer.inside{
+        	sh 'npm install --only=dev'
+     	}
+   }
+  try{
+   	stage("test database mysql + node") {
+		def mysql = docker.image("mysql").run("-e MYSQL_ALLOW_EMPTY_PASSWORD=yes")
+		//we build the database to link it with the node container that we build right now.
+
+		def myTestContainer = docker.image("node:latest")
+        	myTestContainer.pull()
+        	myTestContainer.inside("--link ${mysql.id}:mysql"){ //now the db is linked with node on port 3306
+        		sh 'npm install --only=dev'
+      			sh 'npm test'
+     		}
+   	}
+   } catch(e){
+	//mark the stage as failed.
+	currentBuild.result="FAILURE";
+	
+	//set variables
+	def subject = "${env.JOB_NAME} - BUILD #${env.BUILD_NUMBER} ${currentBuild.result}"
+	def content = '${JELLY_SCRIPT,template="html"}'
+
+	//send mail
+	if( to != null && !to.isEmpty() ){
+		emailext(body : content, mimeType: 'text/html', replyTo: '$DEFAULT_REPLYTO', subject: subject, to: to, attachLog: true)
+	}
+	//mark the build as failed
+	throw e;
+   }
+
+
+   stage('docker build/push') {
+     docker.withRegistry('https://index.docker.io/', '08c79c14-27da-4057-a252-a370fe1e507f') {
+       def app = docker.build("durandocker3/jenkins_docker_repo:${commit_id}", '.').push()
+     }
+   }
+}
