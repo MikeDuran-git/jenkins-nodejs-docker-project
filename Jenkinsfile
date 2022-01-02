@@ -12,7 +12,7 @@ node {
      }
    }
    stage('docker build/push') {
-     docker.withRegistry('https://hub.docker.com/repository/docker/durandocker3/jenkins_docker_repo', '08c79c14-27da-4057-a252-a370fe1e507f') {
+     docker.withRegistry('https://index.docker.io/', '08c79c14-27da-4057-a252-a370fe1e507f') {
        def app = docker.build("durandocker3/jenkins_docker_repo:${commit_id}", '.').push()
      }
    }
