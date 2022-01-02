@@ -1,5 +1,9 @@
 node {
-   
+     def to = emailextrecipients([
+          [$class: 'CulpritsRecipientProvider'],
+          [$class: 'DevelopersRecipientProvider'],
+          [$class: 'RequesterRecipientProvider']
+  ])
    def commit_id
    stage('Preparation') {
      checkout scm
@@ -33,10 +37,10 @@ node {
 	def subject = "${env.JOB_NAME} - BUILD #${env.BUILD_NUMBER} ${currentBuild.result}"
 	def content = '${JELLY_SCRIPT,template="html"}'
 
-	//send mail
-	if( to != null && !to.isEmpty() ){
-		emailext(body : content, mimeType: 'text/html', replyTo: '$DEFAULT_REPLYTO', subject: subject, to: 'mike.duran@hotmail.de', attachLog: true)
-	}
+	// send email
+    	if(to != null && !to.isEmpty()) {
+      		emailext(body: content, mimeType: 'text/html', replyTo: '$DEFAULT_REPLYTO', subject: subject, to: to, attachLog: true )
+    	}
 	//mark the build as failed
 	throw e;
    }
