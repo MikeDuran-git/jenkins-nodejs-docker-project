@@ -10,7 +10,6 @@ node {
         myTestContainer.pull()
         myTestContainer.inside{
         	sh 'npm install --only=dev'
-      		sh 'npm test'
      	}
    }
    stage("test database mysql + node") {
@@ -21,7 +20,6 @@ node {
         myTestContainer.pull()
         myTestContainer.inside("--link ${mysql.id}:mysql"){ //now the db is linked with node on port 3306
         	sh 'npm install --only=dev'
-      		sh 'npm test'
      	}
    }
    stage('docker build/push') {
